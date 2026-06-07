@@ -764,25 +764,20 @@ def main() -> None:
     result_symbol_english_name = st.session_state.get("backtest_symbol_english_name", "")
     escaped_symbol_chinese_name = escape(result_symbol_chinese_name)
     escaped_symbol_english_name = escape(result_symbol_english_name)
-    symbol_english_html = (
-        f"""
-            <div style="font-size: 1.15rem; font-weight: 500; line-height: 1.35; color: #6b7280; margin-top: 6px;">
-                {escaped_symbol_english_name}
-            </div>
-        """
-        if escaped_symbol_english_name
-        else ""
-    )
+    symbol_english_html = ""
+    if escaped_symbol_english_name:
+        symbol_english_html = (
+            '<div style="font-size: 1.15rem; font-weight: 500; line-height: 1.35; '
+            f'color: #6b7280; margin-top: 6px;">{escaped_symbol_english_name}</div>'
+        )
 
     st.markdown(
-        f"""
-        <div style="margin: 8px 0 28px 0;">
-            <div style="font-size: 2.75rem; font-weight: 800; line-height: 1.15; color: #111827;">
-                {escaped_symbol_chinese_name}
-            </div>
-            {symbol_english_html}
-        </div>
-        """,
+        (
+            '<div style="margin: 8px 0 28px 0;">'
+            '<div style="font-size: 2.75rem; font-weight: 800; line-height: 1.15; color: #111827;">'
+            f"{escaped_symbol_chinese_name}</div>"
+            f"{symbol_english_html}</div>"
+        ),
         unsafe_allow_html=True,
     )
 

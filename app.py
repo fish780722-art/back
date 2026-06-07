@@ -391,6 +391,13 @@ def build_price_chart(
     short_window: int,
     long_window: int,
     marker_size: int,
+    up_color: str,
+    down_color: str,
+    short_ma_color: str,
+    long_ma_color: str,
+    buy_marker_color: str,
+    sell_marker_color: str,
+    legend_text_color: str,
 ) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(
@@ -401,12 +408,28 @@ def build_price_chart(
             low=data["Low"],
             close=data["Close"],
             name="日 K",
-            increasing_line_color="#16a34a",
-            decreasing_line_color="#dc2626",
+            increasing_line_color=up_color,
+            decreasing_line_color=down_color,
+            increasing_fillcolor=up_color,
+            decreasing_fillcolor=down_color,
         )
     )
-    fig.add_trace(go.Scatter(x=data.index, y=data["ShortMA"], name=f"短均線 {short_window}", line=dict(width=1.8)))
-    fig.add_trace(go.Scatter(x=data.index, y=data["LongMA"], name=f"長均線 {long_window}", line=dict(width=1.8)))
+    fig.add_trace(
+        go.Scatter(
+            x=data.index,
+            y=data["ShortMA"],
+            name=f"短均線 {short_window}",
+            line=dict(width=1.8, color=short_ma_color),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=data.index,
+            y=data["LongMA"],
+            name=f"長均線 {long_window}",
+            line=dict(width=1.8, color=long_ma_color),
+        )
+    )
 
     buy_points = data[data["PositionChange"] == 1]
     sell_points = data[data["PositionChange"] == -1]
@@ -415,7 +438,7 @@ def build_price_chart(
             x=buy_points.index,
             y=buy_points["Close"],
             mode="markers",
-            marker=dict(symbol="triangle-up", size=marker_size, color="#15803d"),
+            marker=dict(symbol="triangle-up", size=marker_size, color=buy_marker_color),
             hovertemplate="進場<br>日期：%{x|%Y-%m-%d}<br>價格：%{y:,.2f}<extra></extra>",
             name="金叉進場",
         )
@@ -425,17 +448,23 @@ def build_price_chart(
             x=sell_points.index,
             y=sell_points["Close"],
             mode="markers",
-            marker=dict(symbol="triangle-down", size=marker_size, color="#b91c1c"),
+            marker=dict(symbol="triangle-down", size=marker_size, color=sell_marker_color),
             hovertemplate="出場<br>日期：%{x|%Y-%m-%d}<br>價格：%{y:,.2f}<extra></extra>",
             name="死叉出場",
         )
     )
     fig.update_layout(
-        title=f"{symbol} 日 K、均線與買賣點",
         height=560,
-        margin=dict(l=20, r=20, t=55, b=20),
+        margin=dict(l=20, r=20, t=80, b=20),
         xaxis_rangeslider_visible=False,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+            font=dict(color=legend_text_color),
+        ),
     )
     fig.update_yaxes(range=calculate_price_y_range(data), fixedrange=False)
     return fig
@@ -552,6 +581,15 @@ def main() -> None:
         long_window = st.number_input("長均線天數", min_value=3, value=20, step=1)
         price_adjustment_mode = st.selectbox("價格調整方式", options=PRICE_ADJUSTMENT_MODES, index=0)
         marker_size = st.number_input("進出場標記大小", min_value=4, max_value=30, value=11, step=1)
+        with st.expander("圖表顏色", expanded=False):
+            chart_title_color = st.color_picker("圖表標題顏色", value="#111827")
+            legend_text_color = st.color_picker("圖例文字顏色", value="#111827")
+            up_color = st.color_picker("上漲 K 顏色", value="#16a34a")
+            down_color = st.color_picker("下跌 K 顏色", value="#dc2626")
+            short_ma_color = st.color_picker("短均線顏色", value="#60a5fa")
+            long_ma_color = st.color_picker("長均線顏色", value="#ff3333")
+            buy_marker_color = st.color_picker("金叉進場顏色", value="#15803d")
+            sell_marker_color = st.color_picker("死叉出場顏色", value="#b91c1c")
         range_label = st.selectbox("交易區間", options=list(QUICK_RANGES.keys()), index=3)
 
         default_start, default_end = get_default_date_range(range_label)
@@ -669,8 +707,26 @@ def main() -> None:
         st.warning("這個圖表區間沒有資料。")
         return
 
+    st.markdown(
+        f'<div style="color:{chart_title_color}; font-weight:700; margin: 0 0 12px 0;">'
+        f"{result_symbol} 日 K、均線與買賣點</div>",
+        unsafe_allow_html=True,
+    )
     st.plotly_chart(
-        build_price_chart(display_data, result_symbol, result_short_window, result_long_window, int(marker_size)),
+        build_price_chart(
+            display_data,
+            result_symbol,
+            result_short_window,
+            result_long_window,
+            int(marker_size),
+            up_color,
+            down_color,
+            short_ma_color,
+            long_ma_color,
+            buy_marker_color,
+            sell_marker_color,
+            legend_text_color,
+        ),
         use_container_width=True,
     )
     st.plotly_chart(build_equity_chart(display_data), use_container_width=True)

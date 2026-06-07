@@ -417,6 +417,7 @@ def run_backtest(
     data["LongMA"] = data["Close"].rolling(long_window).mean()
     data["Signal"] = (data["ShortMA"] > data["LongMA"]).astype(int)
     data["PositionChange"] = data["Signal"].diff().fillna(0).astype(int)
+    data["TradeAction"] = data["PositionChange"].shift(1).fillna(0).astype(int)
 
     cash = float(initial_capital)
     shares = 0.0
@@ -429,16 +430,16 @@ def run_backtest(
 
     for current_date, row in data.iterrows():
         close_price = float(row["Close"])
-        position_change = int(row["PositionChange"])
+        trade_action = int(row["TradeAction"])
 
-        if position_change == 1 and shares == 0 and cash > 0:
+        if trade_action == 1 and shares == 0 and cash > 0 and close_price > 0:
             shares = cash / close_price
             entry_date = current_date
             entry_price = close_price
             entry_value = cash
             cash = 0.0
 
-        elif position_change == -1 and shares > 0:
+        elif trade_action == -1 and shares > 0 and close_price > 0:
             cash, trade = close_position(
                 shares=shares,
                 exit_price=close_price,
@@ -654,15 +655,15 @@ def build_price_chart(
         )
     )
 
-    buy_points = data[data["PositionChange"] == 1]
-    sell_points = data[data["PositionChange"] == -1]
+    buy_points = data[data["TradeAction"] == 1]
+    sell_points = data[data["TradeAction"] == -1]
     fig.add_trace(
         go.Scatter(
             x=buy_points.index,
             y=buy_points["Close"],
             mode="markers",
             marker=dict(symbol="triangle-up", size=marker_size, color=buy_marker_color),
-            hovertemplate="進場<br>日期：%{x|%Y-%m-%d}<br>價格：%{y:,.2f}<extra></extra>",
+            hovertemplate="進場<br>日期：%{x|%Y-%m-%d}<br>收盤價：%{y:,.2f}<extra></extra>",
             name="金叉進場",
         )
     )
@@ -672,7 +673,7 @@ def build_price_chart(
             y=sell_points["Close"],
             mode="markers",
             marker=dict(symbol="triangle-down", size=marker_size, color=sell_marker_color),
-            hovertemplate="出場<br>日期：%{x|%Y-%m-%d}<br>價格：%{y:,.2f}<extra></extra>",
+            hovertemplate="出場<br>日期：%{x|%Y-%m-%d}<br>收盤價：%{y:,.2f}<extra></extra>",
             name="死叉出場",
         )
     )

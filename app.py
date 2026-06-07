@@ -313,7 +313,13 @@ def format_metric_value(key: str, value: float | int | str) -> str:
     return str(value)
 
 
-def build_price_chart(data: pd.DataFrame, symbol: str, short_window: int, long_window: int) -> go.Figure:
+def build_price_chart(
+    data: pd.DataFrame,
+    symbol: str,
+    short_window: int,
+    long_window: int,
+    marker_size: int,
+) -> go.Figure:
     fig = go.Figure()
     fig.add_trace(
         go.Candlestick(
@@ -337,7 +343,8 @@ def build_price_chart(data: pd.DataFrame, symbol: str, short_window: int, long_w
             x=buy_points.index,
             y=buy_points["Close"],
             mode="markers",
-            marker=dict(symbol="triangle-up", size=11, color="#15803d"),
+            marker=dict(symbol="triangle-up", size=marker_size, color="#15803d"),
+            hovertemplate="進場<br>日期：%{x|%Y-%m-%d}<br>價格：%{y:,.2f}<extra></extra>",
             name="金叉進場",
         )
     )
@@ -346,7 +353,8 @@ def build_price_chart(data: pd.DataFrame, symbol: str, short_window: int, long_w
             x=sell_points.index,
             y=sell_points["Close"],
             mode="markers",
-            marker=dict(symbol="triangle-down", size=11, color="#b91c1c"),
+            marker=dict(symbol="triangle-down", size=marker_size, color="#b91c1c"),
+            hovertemplate="出場<br>日期：%{x|%Y-%m-%d}<br>價格：%{y:,.2f}<extra></extra>",
             name="死叉出場",
         )
     )
@@ -470,6 +478,7 @@ def main() -> None:
         initial_capital = st.number_input("投入資金", min_value=1_000.0, value=1_000_000.0, step=10_000.0)
         short_window = st.number_input("短均線天數", min_value=2, value=5, step=1)
         long_window = st.number_input("長均線天數", min_value=3, value=20, step=1)
+        marker_size = st.number_input("進出場標記大小", min_value=4, max_value=30, value=11, step=1)
         range_label = st.selectbox("交易區間", options=list(QUICK_RANGES.keys()), index=3)
 
         default_start, default_end = get_default_date_range(range_label)
@@ -577,7 +586,7 @@ def main() -> None:
         return
 
     st.plotly_chart(
-        build_price_chart(display_data, result_symbol, result_short_window, result_long_window),
+        build_price_chart(display_data, result_symbol, result_short_window, result_long_window, int(marker_size)),
         use_container_width=True,
     )
     st.plotly_chart(build_equity_chart(display_data), use_container_width=True)

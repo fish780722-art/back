@@ -660,7 +660,7 @@ def main() -> None:
 
     st.subheader("核心結果")
     st.caption(f"價格調整方式：{result_price_adjustment_mode}")
-    primary_metrics = ["期末資產", "報酬金額", "總報酬率", "勝率", "交易次數", "獲利因子", "最大回撤", "買入持有報酬率"]
+    primary_metrics = ["期末資產", "報酬金額", "總報酬率", "勝率", "交易次數", "獲利因子", "最大回撤"]
     metric_columns = st.columns(4)
     for index, key in enumerate(primary_metrics):
         with metric_columns[index % 4]:

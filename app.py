@@ -416,6 +416,7 @@ def run_backtest(
     initial_capital: float,
     take_profit_pct: float = 0.0,
     stop_loss_pct: float = 0.0,
+    use_death_cross_exit: bool = True,
 ) -> BacktestResult:
     data = price_data.copy()
     data["ShortMA"] = data["Close"].rolling(short_window).mean()
@@ -445,7 +446,7 @@ def run_backtest(
                 exit_reason = "停利出場"
             elif stop_loss_pct > 0 and current_return <= -stop_loss_pct:
                 exit_reason = "停損出場"
-            elif trade_action == -1:
+            elif use_death_cross_exit and trade_action == -1:
                 exit_reason = "死叉出場"
 
         if exit_reason:
@@ -840,6 +841,7 @@ def main() -> None:
         long_window = st.number_input("長均線天數", min_value=3, value=20, step=1)
         price_adjustment_mode = st.selectbox("價格調整方式", options=PRICE_ADJUSTMENT_MODES, index=0)
         marker_size = st.number_input("進出場標記大小", min_value=4, max_value=30, value=11, step=1)
+        use_death_cross_exit = st.checkbox("啟用死叉出場", value=True)
         use_take_profit = st.checkbox("啟用停利出場", value=False)
         take_profit_pct = (
             st.number_input("停利百分比 (%)", min_value=0.1, value=10.0, step=0.5) / 100
@@ -913,6 +915,7 @@ def main() -> None:
             float(initial_capital),
             float(take_profit_pct),
             float(stop_loss_pct),
+            bool(use_death_cross_exit),
         )
         st.session_state["backtest_symbol"] = symbol
         st.session_state["backtest_short_window"] = int(short_window)
@@ -922,6 +925,7 @@ def main() -> None:
         st.session_state["backtest_price_adjustment_mode"] = price_adjustment_mode
         st.session_state["backtest_take_profit_pct"] = float(take_profit_pct)
         st.session_state["backtest_stop_loss_pct"] = float(stop_loss_pct)
+        st.session_state["backtest_use_death_cross_exit"] = bool(use_death_cross_exit)
         resolved_chinese_name, resolved_english_name = resolve_symbol_names(symbol)
         st.session_state["backtest_symbol_chinese_name"] = resolved_chinese_name
         st.session_state["backtest_symbol_english_name"] = resolved_english_name
@@ -937,6 +941,7 @@ def main() -> None:
     result_price_adjustment_mode = st.session_state.get("backtest_price_adjustment_mode", PRICE_ADJUSTMENT_MODES[0])
     result_take_profit_pct = st.session_state.get("backtest_take_profit_pct", 0.0)
     result_stop_loss_pct = st.session_state.get("backtest_stop_loss_pct", 0.0)
+    result_use_death_cross_exit = st.session_state.get("backtest_use_death_cross_exit", True)
     result_symbol_chinese_name = st.session_state.get("backtest_symbol_chinese_name", result_symbol)
     result_symbol_english_name = st.session_state.get("backtest_symbol_english_name", "")
     escaped_symbol_chinese_name = escape(result_symbol_chinese_name)
@@ -962,7 +967,8 @@ def main() -> None:
     st.caption(f"價格調整方式：{result_price_adjustment_mode}")
     take_profit_label = f"停利：{result_take_profit_pct:.2%}" if result_take_profit_pct > 0 else "停利：未啟用"
     stop_loss_label = f"停損：{result_stop_loss_pct:.2%}" if result_stop_loss_pct > 0 else "停損：未啟用"
-    st.caption(f"{take_profit_label}；{stop_loss_label}")
+    death_cross_exit_label = "死叉出場：啟用" if result_use_death_cross_exit else "死叉出場：關閉"
+    st.caption(f"{death_cross_exit_label}；{take_profit_label}；{stop_loss_label}")
     primary_metrics = ["期末資產", "報酬金額", "總報酬率", "勝率", "交易次數", "獲利因子", "最大回撤"]
     metric_columns = st.columns(4)
     for index, key in enumerate(primary_metrics):
